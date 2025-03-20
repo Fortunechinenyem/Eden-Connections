@@ -28,7 +28,7 @@ export default function Signup() {
       await updateProfile(user, { displayName: name });
 
       console.log("User successfully signed up and added to Firestore!");
-      router.push("/");
+      router.push("/profile");
     } catch (error) {
       console.error("Error during sign-up:", error.message);
       setError(error.message);

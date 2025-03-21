@@ -13,7 +13,7 @@ export default function Navbar() {
     <nav className="bg-white shadow-lg fixed w-full z-50">
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
         <Link href="/" className="text-2xl font-bold text-indigo-900">
-          <Image src="/eden.png" width={90} height={90} alt="Logo" priority />
+          <Image src="/eden.png" width={50} height={50} alt="Logo" priority />
         </Link>
 
         <button

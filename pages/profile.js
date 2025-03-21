@@ -1,144 +1,165 @@
-import { useState } from "react";
-import { auth, db, storage } from "../firebase";
-import { doc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { useEffect, useState } from "react";
+import { auth, db } from "../firebase";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from "firebase/firestore";
 import { useRouter } from "next/router";
 
-export default function ProfileSetup() {
-  const [name, setName] = useState("");
-  const [age, setAge] = useState("");
-  const [bio, setBio] = useState("");
-  const [profilePicture, setProfilePicture] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+export default function Dashboard() {
+  const [user, setUser] = useState(null);
+  const [matches, setMatches] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    const user = auth.currentUser;
+  useEffect(() => {
+    let unsubscribeMatches = () => {};
 
-    if (!user) {
-      setError("You must be logged in to save your profile.");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      let profilePictureUrl = "";
-      if (profilePicture) {
-        const fileRef = ref(storage, `profile-pictures/${user.uid}`);
-        await uploadBytes(fileRef, profilePicture);
-        profilePictureUrl = await getDownloadURL(fileRef);
+    const fetchUserProfile = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          setUser(userDoc.data());
+        }
       }
+    };
 
-      await setDoc(doc(db, "users", user.uid), {
-        name,
-        age: parseInt(age),
-        bio,
-        email: user.email,
-        profilePicture: profilePictureUrl,
-      });
+    const fetchMatches = () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const matchesQuery = query(
+          collection(db, "users"),
+          where("uid", "!=", currentUser.uid)
+        );
+        unsubscribeMatches = onSnapshot(matchesQuery, (snapshot) => {
+          const matchesData = snapshot.docs.map((doc) => doc.data());
+          setMatches(matchesData);
+          setLoading(false);
+        });
+      }
+    };
 
-      router.push("/dashboard"); // Redirect to dashboard
-    } catch (error) {
-      console.error("Error saving profile:", error.message);
-      setError("Failed to save profile. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchUserProfile();
+    fetchMatches();
+
+    return () => unsubscribeMatches();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-purple-50 to-indigo-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-bold text-center text-purple-600 mb-8">
-          Set Up Your Profile
-        </h1>
-        <form onSubmit={handleSaveProfile} className="space-y-6">
-          <div className="flex justify-center">
-            <label className="cursor-pointer">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setProfilePicture(e.target.files[0])}
-                className="hidden"
-              />
-              <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                {profilePicture ? (
-                  <img
-                    src={URL.createObjectURL(profilePicture)}
-                    alt="Profile Preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-gray-500">Upload Photo</span>
-                )}
-              </div>
-            </label>
-          </div>
-
-          {/* Name Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Name
-            </label>
-            <input
-              type="text"
-              placeholder="Enter your name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Age
-            </label>
-            <input
-              type="number"
-              placeholder="Enter your age"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-              required
-              min="18"
-            />
-          </div>
-
-          {/* Bio Input */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Bio
-            </label>
-            <textarea
-              placeholder="Tell us about yourself"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-              rows="4"
-              required
-            />
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="text-red-500 text-sm text-center">{error}</div>
-          )}
-
-          <div>
+    <div className="min-h-screen bg-gray-100">
+      <nav className="bg-white shadow-lg">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-purple-600">
+            EdenConnections
+          </h1>
+          <div className="space-x-4">
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+              onClick={() => router.push("/dashboard")}
+              className="text-gray-700 hover:text-purple-600"
             >
-              {loading ? "Saving..." : "Save Profile"}
+              Dashboard
+            </button>
+            <button
+              onClick={() => router.push("/chat")}
+              className="text-gray-700 hover:text-purple-600"
+            >
+              Chat
+            </button>
+            <button
+              onClick={() => auth.signOut()}
+              className="text-gray-700 hover:text-purple-600"
+            >
+              Logout
             </button>
           </div>
-        </form>
+        </div>
+      </nav>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-bold text-purple-600 mb-4">
+              Your Profile
+            </h2>
+            {user && (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  {user.profilePicture ? (
+                    <img
+                      src={user.profilePicture}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-500">No Photo</span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-semibold">{user.name}</p>
+                  <p className="text-gray-600">{user.age} years old</p>
+                  <p className="text-gray-600">{user.bio}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="col-span-2 bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-bold text-purple-600 mb-4">
+              Your Matches
+            </h2>
+            {matches.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {matches.map((match, index) => (
+                  <div
+                    key={index}
+                    className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex justify-center">
+                      {match.profilePicture ? (
+                        <img
+                          src={match.profilePicture}
+                          alt={match.name}
+                          className="w-16 h-16 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">No Photo</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center mt-2">
+                      <p className="font-semibold">{match.name}</p>
+                      <p className="text-gray-600">{match.age} years old</p>
+                      <button
+                        onClick={() => router.push(`/chat/${match.uid}`)}
+                        className="mt-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                      >
+                        Message
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600">No matches found.</p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

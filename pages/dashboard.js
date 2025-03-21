@@ -17,6 +17,8 @@ export default function Dashboard() {
   const router = useRouter();
 
   useEffect(() => {
+    let unsubscribeMatches = () => {}; // Initialize unsubscribe function
+
     const fetchUserProfile = async () => {
       const currentUser = auth.currentUser;
       if (currentUser) {
@@ -27,25 +29,31 @@ export default function Dashboard() {
       }
     };
 
-    const fetchMatches = async () => {
+    const fetchMatches = () => {
       const currentUser = auth.currentUser;
       if (currentUser) {
         const matchesQuery = query(
           collection(db, "users"),
-          where("uid", "!=", currentUser.uid)
+          where("uid", "!=", currentUser.uid) // Exclude the current user
         );
-        const unsubscribe = onSnapshot(matchesQuery, (snapshot) => {
+        // Set up the onSnapshot listener and store the unsubscribe function
+        unsubscribeMatches = onSnapshot(matchesQuery, (snapshot) => {
           const matchesData = snapshot.docs.map((doc) => doc.data());
           setMatches(matchesData);
           setLoading(false);
         });
-        return unsubscribe;
       }
     };
 
     fetchUserProfile();
-    const unsubscribe = fetchMatches();
-    return () => unsubscribe();
+    fetchMatches();
+
+    // Cleanup function to unsubscribe from the snapshot listener
+    return () => {
+      if (unsubscribeMatches) {
+        unsubscribeMatches(); // Call the unsubscribe function
+      }
+    };
   }, []);
 
   if (loading) {
@@ -58,6 +66,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Navigation Bar */}
       <nav className="bg-white shadow-lg">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-600">
@@ -95,11 +104,17 @@ export default function Dashboard() {
             {user && (
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <img
-                    src={user.profilePicture || "/default-profile.png"}
-                    alt="Profile"
-                    className="w-24 h-24 rounded-full object-cover"
-                  />
+                  {user.profilePicture ? (
+                    <img
+                      src={user.profilePicture}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-500">No Photo</span>
+                    </div>
+                  )}
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-semibold">{user.name}</p>
@@ -122,11 +137,17 @@ export default function Dashboard() {
                     className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-shadow"
                   >
                     <div className="flex justify-center">
-                      <img
-                        src={match.profilePicture || "/default-profile.png"}
-                        alt={match.name}
-                        className="w-16 h-16 rounded-full object-cover"
-                      />
+                      {match.profilePicture ? (
+                        <img
+                          src={match.profilePicture}
+                          alt={match.name}
+                          className="w-16 h-16 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+                          <span className="text-gray-500">No Photo</span>
+                        </div>
+                      )}
                     </div>
                     <div className="text-center mt-2">
                       <p className="font-semibold">{match.name}</p>

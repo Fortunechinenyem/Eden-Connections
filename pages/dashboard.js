@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { auth, db } from "../firebase";
+
 import {
   doc,
   getDoc,
@@ -9,6 +9,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { useRouter } from "next/router";
+import { auth, db } from "@/firebase";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -17,7 +18,7 @@ export default function Dashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    let unsubscribeMatches = () => {}; // Initialize unsubscribe function
+    let unsubscribeMatches = () => {};
 
     const fetchUserProfile = async () => {
       const currentUser = auth.currentUser;
@@ -34,9 +35,9 @@ export default function Dashboard() {
       if (currentUser) {
         const matchesQuery = query(
           collection(db, "users"),
-          where("uid", "!=", currentUser.uid) // Exclude the current user
+          where("uid", "!=", currentUser.uid)
         );
-        // Set up the onSnapshot listener and store the unsubscribe function
+
         unsubscribeMatches = onSnapshot(matchesQuery, (snapshot) => {
           const matchesData = snapshot.docs.map((doc) => doc.data());
           setMatches(matchesData);
@@ -48,10 +49,9 @@ export default function Dashboard() {
     fetchUserProfile();
     fetchMatches();
 
-    // Cleanup function to unsubscribe from the snapshot listener
     return () => {
       if (unsubscribeMatches) {
-        unsubscribeMatches(); // Call the unsubscribe function
+        unsubscribeMatches();
       }
     };
   }, []);

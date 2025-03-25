@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { auth, db } from "../firebase";
+
 import {
   collection,
   addDoc,
@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { onAuthStateChanged } from "firebase/auth";
+import { auth, db } from "@/firebase";
 
 export default function ChatPage() {
   const [message, setMessage] = useState("");
@@ -21,13 +22,13 @@ export default function ChatPage() {
   const { uid: receiverId } = router.query;
   const messagesEndRef = useRef(null);
 
-  // Wait for authentication to complete
+  e;
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentUser(user);
       } else {
-        router.push("/login"); // Redirect to login if not authenticated
+        router.push("/login");
       }
       setLoading(false);
     });
@@ -35,7 +36,6 @@ export default function ChatPage() {
     return () => unsubscribe();
   }, [router]);
 
-  // Fetch messages in real-time
   useEffect(() => {
     if (!currentUser || !receiverId) return;
 
@@ -57,12 +57,10 @@ export default function ChatPage() {
     return () => unsubscribe();
   }, [currentUser, receiverId]);
 
-  // Scroll to the bottom of the chat window when new messages are added
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Send a message
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim() || !currentUser || !receiverId) return;
@@ -90,12 +88,10 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Chat Header */}
       <div className="bg-white shadow-lg p-4">
         <h1 className="text-xl font-bold text-purple-600">Chat</h1>
       </div>
 
-      {/* Chat Window */}
       <div className="flex-1 p-4 overflow-y-auto">
         {messages.map((msg) => (
           <div

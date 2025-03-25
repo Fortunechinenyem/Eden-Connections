@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { auth, db, storage } from "../firebase";
+
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import {
   ref,
@@ -9,6 +9,7 @@ import {
 } from "firebase/storage";
 import { useRouter } from "next/router";
 import { onAuthStateChanged } from "firebase/auth";
+import { auth, db, storage } from "@/firebase";
 
 export default function EditProfile() {
   const [name, setName] = useState("");

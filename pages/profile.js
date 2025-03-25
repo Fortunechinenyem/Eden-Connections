@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { auth, db } from "../firebase";
+
 import {
   doc,
   getDoc,
@@ -9,6 +9,7 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { useRouter } from "next/router";
+import { auth, db } from "@/firebase";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);

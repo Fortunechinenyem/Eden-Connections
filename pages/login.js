@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { loginUser, signInWithGoogle } from "../firebase";
+
 import { useRouter } from "next/router";
 import Link from "next/link";
+import { loginUser, signInWithGoogle } from "@/firebase";
 
 export default function Login() {
   const [email, setEmail] = useState("");

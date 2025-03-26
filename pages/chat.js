@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-
 import {
   collection,
   addDoc,
@@ -22,7 +21,8 @@ export default function ChatPage() {
   const { uid: receiverId } = router.query;
   const messagesEndRef = useRef(null);
 
-  e;
+  // Removed the stray 'e;' that was causing the error
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -117,7 +117,7 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} className="bg-white p-15 shadow-lg">
+      <form onSubmit={sendMessage} className="bg-white p-4 shadow-lg">
         <div className="flex">
           <input
             type="text"

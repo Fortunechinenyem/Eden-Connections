@@ -66,12 +66,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Navigation Bar */}
       <nav className="bg-white shadow-lg">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-600">
-            EdenConnections
-          </h1>
+          <Link href="/" className="text-2xl font-bold text-indigo-900">
+            <Image src="/eden.png" width={50} height={50} alt="Logo" priority />
+          </Link>
           <div className="space-x-4">
             <button
               onClick={() => router.push("/profile")}

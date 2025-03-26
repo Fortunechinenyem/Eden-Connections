@@ -1,14 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  FaCross,
-  FaHeart,
-  FaHandsHelping,
-  FaShieldAlt,
-  FaUsers,
-  FaChurch,
-  FaPlay,
-  FaQuoteLeft,
-} from "react-icons/fa";
+import { FaPlay, FaQuoteLeft } from "react-icons/fa";
 import { IoIosArrowDown } from "react-icons/io";
 import Link from "next/link";
 import Navbar from "@/app/components/Navbar";

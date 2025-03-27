@@ -14,7 +14,7 @@ export default function ChurchPortal() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Add form submission logic
+
     alert("Thank you! Our ministry team will contact you shortly.");
   };
 
@@ -24,7 +24,7 @@ export default function ChurchPortal() {
 
       <section className="py-20 bg-gradient-to-r from-purple-700 to-indigo-800 text-white">
         <div className="container mx-auto px-4 text-center">
-          <div className="bg-white bg-opacity-20 rounded-full p-3 inline-block mb-6">
+          <div className=" bg-opacity-20 rounded-full p-3 inline-block mb-6">
             <FaChurch className="text-3xl" />
           </div>
           <h1 className="text-5xl font-bold mb-6">

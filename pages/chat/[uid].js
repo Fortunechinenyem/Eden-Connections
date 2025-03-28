@@ -26,63 +26,73 @@ export default function ChatPage() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
+    if (!router.isReady) return;
+
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (user) {
+      if (!user) {
+        router.push("/login");
+        return;
+      }
+
+      try {
         setCurrentUser(user);
 
-        try {
-          if (receiverId) {
-            const receiverDoc = await getDoc(doc(db, "users", receiverId));
-            if (receiverDoc.exists()) {
-              setReceiver({
-                id: receiverDoc.id,
-                ...receiverDoc.data(),
-              });
-            } else {
-              setError("User not found");
-            }
+        if (receiverId) {
+          // Get receiver data
+          const receiverDoc = await getDoc(doc(db, "users", receiverId));
+          if (!receiverDoc.exists()) {
+            throw new Error("User not found");
           }
-        } catch (err) {
-          setError("Error loading chat");
-          console.error(err);
-        }
+          setReceiver({
+            id: receiverDoc.id,
+            ...receiverDoc.data(),
+          });
 
+          // Set up messages listener
+          const messagesRef = collection(db, "messages");
+          const messagesQuery = query(
+            messagesRef,
+            where("participants", "array-contains", user.uid),
+            orderBy("timestamp", "asc")
+          );
+
+          const unsubscribeMessages = onSnapshot(
+            messagesQuery,
+            (snapshot) => {
+              const messagesData = snapshot.docs
+                .filter((doc) => {
+                  const data = doc.data();
+                  return (
+                    (data.senderId === user.uid &&
+                      data.receiverId === receiverId) ||
+                    (data.senderId === receiverId &&
+                      data.receiverId === user.uid)
+                  );
+                })
+                .map((doc) => ({
+                  id: doc.id,
+                  ...doc.data(),
+                }));
+              setMessages(messagesData);
+            },
+            (error) => {
+              console.error("Messages error:", error);
+              setError("Error loading messages");
+            }
+          );
+
+          return () => unsubscribeMessages();
+        }
+      } catch (err) {
+        console.error("Chat error:", err);
+        setError(err.message || "Error loading chat");
+      } finally {
         setLoading(false);
-      } else {
-        router.push("/login");
       }
     });
 
     return () => unsubscribeAuth();
-  }, [router, receiverId]);
-
-  useEffect(() => {
-    if (!currentUser || !receiverId) return;
-
-    const messagesQuery = query(
-      collection(db, "messages"),
-      where("senderId", "in", [currentUser.uid, receiverId]),
-      where("receiverId", "in", [currentUser.uid, receiverId]),
-      orderBy("timestamp", "asc")
-    );
-
-    const unsubscribeMessages = onSnapshot(
-      messagesQuery,
-      (snapshot) => {
-        const messagesData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setMessages(messagesData);
-      },
-      (error) => {
-        setError("Error loading messages");
-        console.error(error);
-      }
-    );
-
-    return () => unsubscribeMessages();
-  }, [currentUser, receiverId]);
+  }, [router.isReady, receiverId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

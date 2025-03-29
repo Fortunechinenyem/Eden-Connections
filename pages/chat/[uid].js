@@ -20,7 +20,6 @@ export default function ChatPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [receiver, setReceiver] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const router = useRouter();
   const { uid: receiverId } = router.query;
   const messagesEndRef = useRef(null);
@@ -37,56 +36,36 @@ export default function ChatPage() {
       try {
         setCurrentUser(user);
 
-        if (receiverId) {
-          // Get receiver data
-          const receiverDoc = await getDoc(doc(db, "users", receiverId));
-          if (!receiverDoc.exists()) {
-            throw new Error("User not found");
-          }
-          setReceiver({
-            id: receiverDoc.id,
-            ...receiverDoc.data(),
-          });
-
-          // Set up messages listener
-          const messagesRef = collection(db, "messages");
-          const messagesQuery = query(
-            messagesRef,
-            where("participants", "array-contains", user.uid),
-            orderBy("timestamp", "asc")
-          );
-
-          const unsubscribeMessages = onSnapshot(
-            messagesQuery,
-            (snapshot) => {
-              const messagesData = snapshot.docs
-                .filter((doc) => {
-                  const data = doc.data();
-                  return (
-                    (data.senderId === user.uid &&
-                      data.receiverId === receiverId) ||
-                    (data.senderId === receiverId &&
-                      data.receiverId === user.uid)
-                  );
-                })
-                .map((doc) => ({
-                  id: doc.id,
-                  ...doc.data(),
-                }));
-              setMessages(messagesData);
-            },
-            (error) => {
-              console.error("Messages error:", error);
-              setError("Error loading messages");
-            }
-          );
-
-          return () => unsubscribeMessages();
+        // Get receiver data
+        const receiverDoc = await getDoc(doc(db, "users", receiverId));
+        if (!receiverDoc.exists()) {
+          throw new Error("User not found");
         }
+        setReceiver({
+          id: receiverDoc.id,
+          ...receiverDoc.data(),
+        });
+
+        // Simple query to get messages between these users
+        const messagesQuery = query(
+          collection(db, "messages"),
+          where("senderId", "in", [user.uid, receiverId]),
+          where("receiverId", "in", [user.uid, receiverId]),
+          orderBy("timestamp", "asc")
+        );
+
+        const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+          const messagesData = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setMessages(messagesData);
+        });
+
+        setLoading(false);
+        return () => unsubscribeMessages();
       } catch (err) {
         console.error("Chat error:", err);
-        setError(err.message || "Error loading chat");
-      } finally {
         setLoading(false);
       }
     });
@@ -97,34 +76,22 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-  const ensureChatExists = async (userId1, userId2) => {
-    const chatsRef = collection(db, "chats");
-    const q = query(chatsRef, where("participants", "array-contains", userId1));
-    const snapshot = await getDocs(q);
 
-    const existingChat = snapshot.docs.find((doc) =>
-      doc.data().participants.includes(userId2)
-    );
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    if (!message.trim() || !currentUser || !receiverId) return;
 
-    if (existingChat) return existingChat.id;
-
-    // Create new chat
-    const newChatRef = await addDoc(chatsRef, {
-      participants: [userId1, userId2],
-      createdAt: serverTimestamp(),
-    });
-    return newChatRef.id;
-  };
-
-  const sendMessage = async () => {
-    const chatId = await ensureChatExists(currentUser.uid, receiverId);
-    const messagesRef = collection(db, "chats", chatId, "messages");
-
-    await addDoc(messagesRef, {
-      senderId: currentUser.uid,
-      message: messageText,
-      timestamp: serverTimestamp(),
-    });
+    try {
+      await addDoc(collection(db, "messages"), {
+        senderId: currentUser.uid,
+        receiverId: receiverId,
+        message: message,
+        timestamp: serverTimestamp(),
+      });
+      setMessage("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   };
 
   if (loading) {
@@ -135,25 +102,9 @@ export default function ChatPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-100">
-        <div className="bg-white p-6 rounded-lg shadow-lg text-center max-w-md w-full">
-          <h2 className="text-xl font-bold text-purple-600 mb-4">Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => router.push("/browse")}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 w-full"
-          >
-            Back to Browse
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* Header with back button and receiver info */}
       <div className="bg-white shadow-lg p-4 flex items-center sticky top-0 z-10">
         <button
           onClick={() => router.back()}
@@ -179,7 +130,8 @@ export default function ChatPage() {
         </div>
       </div>
 
-      <div>
+      {/* Messages area */}
+      <div className="flex-1 p-4 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full">
@@ -212,12 +164,12 @@ export default function ChatPage() {
             <div
               key={msg.id}
               className={`mb-4 ${
-                msg.senderId === currentUser.uid ? "text-right" : "text-left"
+                msg.senderId === currentUser?.uid ? "text-right" : "text-left"
               }`}
             >
               <div
                 className={`inline-block p-3 rounded-lg max-w-[75%] ${
-                  msg.senderId === currentUser.uid
+                  msg.senderId === currentUser?.uid
                     ? "bg-purple-600 text-white"
                     : "bg-gray-200 text-gray-800"
                 }`}
@@ -225,7 +177,7 @@ export default function ChatPage() {
                 <p className="break-words">{msg.message}</p>
                 <p
                   className={`text-xs mt-1 ${
-                    msg.senderId === currentUser.uid
+                    msg.senderId === currentUser?.uid
                       ? "text-purple-200"
                       : "text-gray-500"
                   }`}
@@ -242,6 +194,7 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Message input */}
       <form
         onSubmit={sendMessage}
         className="bg-white p-4 shadow-lg sticky bottom-0"
@@ -260,18 +213,7 @@ export default function ChatPage() {
             className="bg-purple-600 text-white px-5 py-3 rounded-r-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={!message.trim() || !receiver}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
+            Send
           </button>
         </div>
       </form>

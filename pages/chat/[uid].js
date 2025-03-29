@@ -97,23 +97,34 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+  const ensureChatExists = async (userId1, userId2) => {
+    const chatsRef = collection(db, "chats");
+    const q = query(chatsRef, where("participants", "array-contains", userId1));
+    const snapshot = await getDocs(q);
 
-  const sendMessage = async (e) => {
-    e.preventDefault();
-    if (!message.trim() || !currentUser || !receiverId) return;
+    const existingChat = snapshot.docs.find((doc) =>
+      doc.data().participants.includes(userId2)
+    );
 
-    try {
-      await addDoc(collection(db, "messages"), {
-        senderId: currentUser.uid,
-        receiverId,
-        message,
-        timestamp: serverTimestamp(),
-      });
-      setMessage("");
-    } catch (error) {
-      setError("Failed to send message");
-      console.error("Error sending message:", error);
-    }
+    if (existingChat) return existingChat.id;
+
+    // Create new chat
+    const newChatRef = await addDoc(chatsRef, {
+      participants: [userId1, userId2],
+      createdAt: serverTimestamp(),
+    });
+    return newChatRef.id;
+  };
+
+  const sendMessage = async () => {
+    const chatId = await ensureChatExists(currentUser.uid, receiverId);
+    const messagesRef = collection(db, "chats", chatId, "messages");
+
+    await addDoc(messagesRef, {
+      senderId: currentUser.uid,
+      message: messageText,
+      timestamp: serverTimestamp(),
+    });
   };
 
   if (loading) {

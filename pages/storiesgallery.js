@@ -28,7 +28,7 @@ const successStories = [
     story:
       "As single parents, we appreciated the family-friendly filters. Our kids became friends before we even met in person!",
     tags: ["Single Parents", "Long-Distance"],
-    date: "Married April 2024",
+    date: "Married April 2023",
   },
 ];
 

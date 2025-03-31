@@ -104,7 +104,6 @@ export default function ChatPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header with back button and receiver info */}
       <div className="bg-white shadow-lg p-4 flex items-center sticky top-0 z-10">
         <button
           onClick={() => router.back()}
@@ -130,7 +129,6 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Messages area */}
       <div className="flex-1 p-4 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
@@ -194,7 +192,6 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message input */}
       <form
         onSubmit={sendMessage}
         className="bg-white p-4 shadow-lg sticky bottom-0"

@@ -9,6 +9,8 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { auth, db } from "@/firebase";
+import Link from "next/link";
+import Image from "next/image";
 
 export default function ProfilePage() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -63,12 +65,11 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Navigation */}
       <nav className="bg-white shadow-lg">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-600">
-            EdenConnections
-          </h1>
+          <Link href="/" className="text-2xl font-bold text-indigo-900">
+            <Image src="/eden.png" width={50} height={50} alt="Logo" priority />
+          </Link>
           <div className="space-x-4">
             <button
               onClick={() => router.push("/profile")}
@@ -92,10 +93,8 @@ export default function ProfilePage() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Profile Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-lg p-6 sticky top-4">
               <h2 className="text-xl font-bold text-purple-600 mb-4">
@@ -153,7 +152,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => router.push("/profile/edit")}
+                    onClick={() => router.push("/editprofile")}
                     className="w-full mt-6 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors"
                   >
                     Edit Profile
@@ -163,7 +162,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Users List */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
               <h2 className="text-xl font-bold text-purple-600 mb-4">

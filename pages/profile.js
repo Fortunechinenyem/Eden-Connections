@@ -68,7 +68,7 @@ export default function ProfilePage() {
       <nav className="bg-white shadow-lg">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold text-indigo-900">
-            <Image src="/eden.png" width={50} height={50} alt="Logo" priority />
+            <Image src="/eden.png" width={80} height={80} alt="Logo" priority />
           </Link>
           <div className="space-x-4">
             <button
